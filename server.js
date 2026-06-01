@@ -7,25 +7,36 @@ import jwt from 'jsonwebtoken'
 
 const app = express()
 const PORT = process.env.PORT || 3000
-const SECRET_KEY = 'mi_clave_secreta'
+const SECRET_KEY = process.env.SECRET_KEY || 'mi_clave_secreta'
 
 
 
 app.use(express.json())
+app.get('/', (req, res) => {
+    res.json({message: 'Bienvenido a la API de Peliculas'})
+})
+
+
 app.post('/api/login', (req, res) => {
     const { username, password } = req.body;
 
-    //Simulacion de validacion de usuario
     if (username === 'admin' && password === '1234') {
-       const user = { id: 1, username: 'Haber'};
-       //Generar token JWT (expires in 1 hora)
-       const token = jwt.sign(user, SECRET_KEY, { expiresIn: '1h' });
-       res.json({ message: 'Login exitoso', token });
-    } else {
-        res.status(401).json({ message: 'Credenciales incorrectas' });
-    }
+        const user = { id: 1, username: 'Haber' };
 
-})
+        const token = jwt.sign(user, SECRET_KEY, {
+            expiresIn: '1h'
+        });
+
+        res.json({
+            message: 'Login exitoso',
+            token
+        });
+    } else {
+        res.status(401).json({
+            message: 'Credenciales incorrectas'
+        });
+    }
+});
 
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
@@ -50,14 +61,14 @@ app.get('/api/peliculas', authenticateToken, async (req, res) => {
 })
 
 //POST - Crear una nueva pelicula
-app.post('/api/peliculas', async (req, res) => {
+app.post('/api/peliculas', authenticateToken, async (req, res) => {
     const body = req.body;
     const resultado = await Pelicula.create(body);
     res.status(200).json(resultado);
 })
 
 //PUT - Actualizar una pelicula existente
-app.put('/api/peliculas/:id', async (req, res) => {
+app.put('/api/peliculas/:id', authenticateToken, async (req, res) => {
     const id = req.params.id;
     const body = req.body;
 
@@ -74,7 +85,7 @@ app.put('/api/peliculas/:id', async (req, res) => {
 })
 
 //DELETE - Eliminar una pelicula
-app.delete('/api/peliculas/:id', async (req, res) => {
+app.delete('/api/peliculas/:id', authenticateToken, async (req, res) => {
     const id = req.params.id;
 
     const pelicula = await Pelicula.findByPk(id);
@@ -95,5 +106,6 @@ app.delete('/api/peliculas/:id', async (req, res) => {
 
 //Inicio del servidor
 app.listen(PORT, () => {
-    console.log('Servidor iniciado en puerto: ', PORT)  
+    console.log(`Servidor escuchando en el puerto ${PORT}`)
 })
+
